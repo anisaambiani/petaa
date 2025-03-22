@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resilience Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        input, select {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            text-align: center;
+            padding: 10px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .graph-container {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Resilience Calculator</h1>
+    <input type="number" id="yearInput" placeholder="Masukkan Year">
+    <input type="number" id="inflasiInput" placeholder="Masukkan Inflasi">
+    <button onclick="addData()">Tambah Data</button>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Year</th>
+                <th>Inflasi</th>
+                <th>Resilience</th>
+            </tr>
+        </thead>
+        <tbody id="dataTable">
+            <!-- Rows will be added dynamically -->
+        </tbody>
+    </table>
+    
+    <button onclick="plotGraph()" style="margin-top: 20px;">Tampilkan Grafik</button>
+    
+    <div class="graph-container">
+        <canvas id="graphCanvas" width="500" height="300"></canvas>
+        <input type="text" id="fileNameInput" placeholder="Masukkan Nama File (tanpa ekstensi)">
+        <select id="fileFormat">
+            <option value="png">PNG</option>
+            <option value="jpeg">JPEG</option>
+        </select>
+        <button onclick="downloadGraph()">Download Grafik</button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let data = []; // Array to store data
+    let chartInstance = null; // To store Chart.js instance
+
+    function addData() {
+        const yearInput = document.getElementById('yearInput').value;
+        const inflasiInput = document.getElementById('inflasiInput').value;
+
+        if (yearInput && inflasiInput) {
+            const year = parseInt(yearInput);
+            const inflasi = parseFloat(inflasiInput);
+            const resilience = inflasi * 0.3 + 20;
+
+            data.push({ year, inflasi, resilience });
+
+            const table = document.getElementById('dataTable');
+            const row = table.insertRow();
+            row.innerHTML = `
+                <td>${year}</td>
+                <td>${inflasi.toFixed(2)}</td>
+                <td>${resilience.toFixed(2)}</td>
+            `;
+
+            document.getElementById('yearInput').value = '';
+            document.getElementById('inflasiInput').value = '';
+        } else {
+            alert('Masukkan Year dan Inflasi dengan benar.');
+        }
+    }
+
+    function plotGraph() {
+        if (data.length === 0) {
+            alert('Tidak ada data untuk ditampilkan.');
+            return;
+        }
+
+        const years = data.map(d => d.year);
+        const resilienceValues = data.map(d => d.resilience);
+
+        const ctx = document.getElementById('graphCanvas').getContext('2d');
+
+        // Destroy existing chart instance if it exists
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: years,
+                datasets: [{
+                    label: 'Resilience',
+                    data: resilienceValues,
+                    borderColor: '#007BFF',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    fill: true,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true },
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Year' } },
+                    y: { title: { display: true, text: 'Resilience' } }
+                }
+            }
+        });
+    }
+
+    function downloadGraph() {
+        if (!chartInstance) {
+            alert('Tidak ada grafik untuk diunduh.');
+            return;
+        }
+
+        const fileNameInput = document.getElementById('fileNameInput').value || 'resilience_chart';
+        const fileFormat = document.getElementById('fileFormat').value;
+        const mimeType = `image/${fileFormat}`;
+        
+        // Create a temporary canvas to set white background
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = chartInstance.width;
+        tempCanvas.height = chartInstance.height;
+        const ctx = tempCanvas.getContext('2d');
+
+        // Fill white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+        // Draw the chart onto the white background canvas
+        ctx.drawImage(document.getElementById('graphCanvas'), 0, 0);
+
+        // Download the image
+        const link = document.createElement('a');
+        link.download = `${fileNameInput}.${fileFormat}`;
+        link.href = tempCanvas.toDataURL(mimeType);
+        link.click();
+    }
+</script>
+
+</body>
+</html>
